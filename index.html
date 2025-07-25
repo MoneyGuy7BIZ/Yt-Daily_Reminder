@@ -1,135 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Shorts Reminder - GearDriven</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YouTube Shorts Reminder</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #f0f0f0;
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body, html {
+      height: 100%;
+      background: #111;
+      color: white;
+    }
+
+    .centered {
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .hidden { display: none; }
-
-    .login-box, .main-box {
-      background: #1a1a1a;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px #0f0;
-      text-align: center;
-      animation: fadeIn 1s ease;
-    }
-
-    input {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 6px;
-      border: none;
-      font-size: 1rem;
-      width: 80%;
-    }
-
-    button {
-      background: #00ff88;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      color: black;
-      margin-top: 10px;
-    }
-
-    #loading {
-      display: flex;
       align-items: center;
-      justify-content: center;
+      height: 100%;
       flex-direction: column;
-      animation: spinIn 1s ease;
     }
 
-    .spinner {
-      border: 5px solid #444;
-      border-top: 5px solid #00ff88;
+    .loading-spinner {
+      width: 80px;
+      height: 80px;
+      border: 6px solid #444;
+      border-top: 6px solid #0f0;
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
       animation: spin 1.2s linear infinite;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
+      position: relative;
+    }
+
+    .loading-spinner::before {
+      content: "🚗";
+      font-size: 28px;
+      position: absolute;
+      top: 24px;
+      left: 24px;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+      to { transform: rotate(360deg); }
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    .container {
+      padding: 20px;
+      text-align: center;
     }
 
-    @keyframes spinIn {
-      from { transform: scale(0.8); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+    input[type="text"], input[type="password"] {
+      padding: 10px;
+      margin: 10px;
+      width: 80%;
+      max-width: 300px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #0f0;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0c0;
     }
 
     #status {
-      margin-top: 15px;
-      font-size: 1.1rem;
-    }
-
-    a {
-      color: #00ff88;
+      margin-top: 20px;
+      font-size: 1.1em;
     }
   </style>
 </head>
 <body>
 
-<div class="login-box" id="loginBox">
-  <h2>🔐 Login to Post Reminder</h2>
-  <input type="text" id="username" placeholder="Username" />
-  <input type="password" id="password" placeholder="Password" />
-  <button onclick="login()">Login</button>
+<div id="loader" class="centered">
+  <div class="loading-spinner"></div>
+  <p>Loading...</p>
 </div>
 
-<div id="loading" class="hidden">
-  <div class="spinner">🚗</div>
-  <p style="margin-top: 10px;">Loading Dashboard...</p>
+<div id="login" class="centered" style="display: none;">
+  <h2>Login</h2>
+  <input type="text" id="username" placeholder="Username" /><br>
+  <input type="password" id="password" placeholder="Password" /><br>
+  <button onclick="authenticate()">Login</button>
+  <p id="loginStatus" style="margin-top: 10px;"></p>
 </div>
 
-<div class="main-box hidden" id="mainBox">
-  <h2>📢 Daily YouTube Short Reminder</h2>
-  <input type="text" id="shortLink" placeholder="Paste your YouTube Shorts link..." />
+<div id="app" class="container" style="display: none;">
+  <h1>YouTube Shorts Reminder</h1>
+  <p>Paste your YouTube Shorts link below:</p>
+  <input type="text" id="shortLink" placeholder="https://youtube.com/shorts/..." />
+  <br>
   <button onclick="checkShort()">Submit</button>
   <div id="status"></div>
 </div>
 
 <script>
-  const expectedChannel = "realgeardriven";
+  const expectedChannel = "@RealGearDriven";
 
-  function login() {
-    const u = document.getElementById("username").value.trim();
-    const p = document.getElementById("password").value.trim();
-    if (u === "MoneyGuy7" && p === "1234") {
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("loading").classList.remove("hidden");
-      setTimeout(() => {
-        document.getElementById("loading").classList.add("hidden");
-        document.getElementById("mainBox").classList.remove("hidden");
-      }, 2000);
+  window.onload = () => {
+    setTimeout(() => {
+      document.getElementById("loader").style.display = "none";
+      document.getElementById("login").style.display = "flex";
+    }, 1500);
+  };
+
+  function authenticate() {
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    const status = document.getElementById("loginStatus");
+
+    if (user === "MoneyGuy7" && pass === "1234") {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("app").style.display = "block";
     } else {
-      alert("❌ Incorrect login.");
+      status.innerText = "❌ Incorrect login. Try again.";
     }
   }
 
@@ -160,25 +155,15 @@
         if (actualAuthor.includes(expected)) {
           const today = new Date().toLocaleDateString();
           localStorage.setItem("lastPostDate", today);
-          status.innerHTML = "✅ Video accepted! You’re done for today.";
+          status.innerText = "✅ Video accepted! You posted today.";
         } else {
-          status.innerHTML = `❌ That video is not from <strong>@${expectedChannel}</strong>`;
+          status.innerText = `❌ This video is not from ${expectedChannel}`;
         }
       })
       .catch(() => {
         status.innerText = "❌ Error checking video.";
       });
   }
-
-  // Optional daily reminder logic
-  window.onload = () => {
-    const last = localStorage.getItem("lastPostDate");
-    const today = new Date().toLocaleDateString();
-    if (last === today) {
-      document.getElementById("status").innerText = "✅ You’ve already posted today!";
-    }
-  };
 </script>
-
 </body>
 </html>
