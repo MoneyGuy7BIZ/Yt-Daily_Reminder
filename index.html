@@ -2,140 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>YouTube Shorts Daily Reminder</title>
+  <title>Shorts Daily Poster</title>
   <style>
-    * { box-sizing: border-box; }
     body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #111;
-      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
-    #loader, #login, #dashboard {
+    .screen {
       display: none;
       flex-direction: column;
-      align-items: center;
+      gap: 1rem;
+      padding: 2rem;
+      background: #1f1f1f;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #000;
+      width: 300px;
     }
     input, button {
-      font-size: 16px;
       padding: 10px;
-      margin: 5px;
-      width: 250px;
       border: none;
       border-radius: 5px;
+      font-size: 1rem;
+    }
+    input {
+      width: 100%;
     }
     button {
-      background: #00cc66;
+      background-color: #4CAF50;
       color: white;
       cursor: pointer;
     }
-    #status {
-      margin-top: 15px;
+    #loadingScreen {
+      font-size: 1.2rem;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
     }
   </style>
 </head>
 <body>
 
-<div id="loader">
-  <h2>Loading your dashboard...</h2>
+<div id="loginScreen" class="screen" style="display: flex;">
+  <h2>🔒 Login</h2>
+  <input id="username" placeholder="Username" autocomplete="off" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="handleLogin()">Enter</button>
 </div>
 
-<div id="login">
-  <h2>Welcome - Login</h2>
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">Enter</button>
-  <p id="loginStatus"></p>
+<div id="loadingScreen" class="screen">
+  <div>🔄 Validating credentials...</div>
 </div>
 
-<div id="dashboard">
-  <h2>YouTube Shorts Daily Reminder</h2>
-  <input type="text" id="link" placeholder="Paste your YouTube Short link">
-  <button onclick="submitLink()">Submit</button>
+<div id="mainScreen" class="screen">
+  <h2>🎯 Submit Your Short</h2>
+  <input id="shortLink" placeholder="Paste YouTube Shorts link..." />
+  <button onclick="submitShort()">✅ Submit</button>
   <div id="status"></div>
 </div>
 
 <script>
-  const expectedUser = "MoneyGuy7";
-  const expectedPass = "1234";
-  const today = new Date().toISOString().slice(0, 10);
-  const expectedChannel = "@realGearDriven"; // <-- Change to your YouTube handle
+  const expectedChannel = "MoneyGuy7"; // Change this to your YouTube channel name
+  const today = new Date().toISOString().split("T")[0];
+  const stored = localStorage.getItem("posted_" + today);
+  const main = document.getElementById("mainScreen");
+  const loading = document.getElementById("loadingScreen");
+  const login = document.getElementById("loginScreen");
+  const status = document.getElementById("status");
 
-  const loader = document.getElementById('loader');
-  const loginScreen = document.getElementById('login');
-  const dashboard = document.getElementById('dashboard');
-  const status = document.getElementById('status');
+  if (stored) {
+    document.getElementById("shortLink").value = stored;
+    status.textContent = "✅ Already submitted today!";
+  } else {
+    notifyLoop();
+  }
 
-  // Step 1: Show loading screen
-  loader.style.display = 'flex';
+  function handleLogin() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
 
-  setTimeout(() => {
-    loader.style.display = 'none';
-    loginScreen.style.display = 'flex';
-  }, 2000); // 2 second loading screen
-
-  function login() {
-    const user = document.getElementById('username').value.trim();
-    const pass = document.getElementById('password').value.trim();
-    const statusMsg = document.getElementById('loginStatus');
-
-    if (user === expectedUser && pass === expectedPass) {
-      loginScreen.style.display = 'none';
-      dashboard.style.display = 'flex';
-      checkStatus();
+    if (user === "MoneyGuy7" && pass === "1234") {
+      login.style.display = "none";
+      loading.style.display = "flex";
+      setTimeout(() => {
+        loading.style.display = "none";
+        main.style.display = "flex";
+      }, 2000); // loading time
     } else {
-      statusMsg.textContent = "❌ Incorrect username or password.";
-      statusMsg.style.color = 'red';
+      alert("❌ Incorrect credentials.");
     }
   }
 
-  function checkStatus() {
-    const stored = localStorage.getItem('posted_' + today);
-    if (stored) {
-      status.innerText = "✅ You've already posted today.";
-    } else {
-      status.innerText = "❌ You haven't posted your Short yet.";
-      notifyReminder();
-    }
-  }
-
-  function submitLink() {
-    const link = document.getElementById('link').value.trim();
-    if (!link.includes("youtube.com/shorts")) {
-      alert("Please enter a valid YouTube Shorts link.");
+  function submitShort() {
+    const link = document.getElementById("shortLink").value.trim();
+    if (!link.includes("youtube.com/shorts/")) {
+      alert("❌ Must be a valid YouTube Shorts link.");
       return;
     }
 
-    fetch('https://noembed.com/embed?url=' + encodeURIComponent(link))
-      .then(res => res.json())
+    const videoId = link.split("/shorts/")[1].split("?")[0];
+    const fullLink = "https://www.youtube.com/watch?v=" + videoId;
+
+    fetch("https://noembed.com/embed?url=" + encodeURIComponent(fullLink))
+      .then(r => {
+        if (!r.ok) throw new Error("Noembed error");
+        return r.json();
+      })
       .then(data => {
         if (data.author_name !== expectedChannel) {
-          alert("❌ This video is not from your channel (" + expectedChannel + ").");
+          alert("❌ That short is not from your channel (" + expectedChannel + ").");
           return;
         }
-
-        localStorage.setItem('posted_' + today, link);
-        status.innerText = "✅ You've posted today from your channel!";
+        localStorage.setItem("posted_" + today, link);
+        status.textContent = "✅ Short from correct channel submitted!";
       })
-      .catch(() => {
-        alert("⚠️ Could not verify the video.");
+      .catch(err => {
+        alert("⚠️ Could not validate video.");
+        console.error(err);
       });
   }
 
-  function notifyReminder() {
-    if (Notification.permission === "granted") {
-      new Notification("Reminder: Post your YouTube Short today!");
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-          new Notification("Reminder: Post your YouTube Short today!");
+  function notifyLoop() {
+    if (!("Notification" in window)) return;
+
+    Notification.requestPermission().then(permission => {
+      if (permission !== "granted") return;
+
+      setInterval(() => {
+        const posted = localStorage.getItem("posted_" + today);
+        if (!posted) {
+          new Notification("📢 Reminder", {
+            body: "Don't forget to post a Short today!",
+            icon: "https://www.youtube.com/s/desktop/d8bdb05d/img/favicon_144x144.png"
+          });
         }
-      });
-    }
+      }, 30000); // Every 30 seconds
+    });
   }
 </script>
 
