@@ -2,151 +2,182 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Shorts Daily Poster</title>
+  <title>Shorts Reminder - GearDriven</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
       margin: 0;
+      padding: 0;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .screen {
-      display: none;
       flex-direction: column;
-      gap: 1rem;
-      padding: 2rem;
-      background: #1f1f1f;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #000;
-      width: 300px;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
     }
-    input, button {
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      font-size: 1rem;
+    .hidden { display: none; }
+
+    .login-box, .main-box {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #0f0;
+      text-align: center;
+      animation: fadeIn 1s ease;
     }
+
     input {
-      width: 100%;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+      width: 80%;
     }
+
     button {
-      background-color: #4CAF50;
-      color: white;
+      background: #00ff88;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
       cursor: pointer;
+      color: black;
+      margin-top: 10px;
     }
-    #loadingScreen {
-      font-size: 1.2rem;
-      animation: pulse 1s infinite;
+
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: spinIn 1s ease;
     }
-    @keyframes pulse {
-      0% { opacity: 0.5; }
-      50% { opacity: 1; }
-      100% { opacity: 0.5; }
+
+    .spinner {
+      border: 5px solid #444;
+      border-top: 5px solid #00ff88;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1.2s linear infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes spinIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 1.1rem;
+    }
+
+    a {
+      color: #00ff88;
     }
   </style>
 </head>
 <body>
 
-<div id="loginScreen" class="screen" style="display: flex;">
-  <h2>🔒 Login</h2>
-  <input id="username" placeholder="Username" autocomplete="off" />
-  <input id="password" type="password" placeholder="Password" />
-  <button onclick="handleLogin()">Enter</button>
+<div class="login-box" id="loginBox">
+  <h2>🔐 Login to Post Reminder</h2>
+  <input type="text" id="username" placeholder="Username" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="login()">Login</button>
 </div>
 
-<div id="loadingScreen" class="screen">
-  <div>🔄 Validating credentials...</div>
+<div id="loading" class="hidden">
+  <div class="spinner">🚗</div>
+  <p style="margin-top: 10px;">Loading Dashboard...</p>
 </div>
 
-<div id="mainScreen" class="screen">
-  <h2>🎯 Submit Your Short</h2>
-  <input id="shortLink" placeholder="Paste YouTube Shorts link..." />
-  <button onclick="submitShort()">✅ Submit</button>
+<div class="main-box hidden" id="mainBox">
+  <h2>📢 Daily YouTube Short Reminder</h2>
+  <input type="text" id="shortLink" placeholder="Paste your YouTube Shorts link..." />
+  <button onclick="checkShort()">Submit</button>
   <div id="status"></div>
 </div>
 
 <script>
-  const expectedChannel = "realgeardriven"; // Change this to your YouTube channel name
-  const today = new Date().toISOString().split("T")[0];
-  const stored = localStorage.getItem("posted_" + today);
-  const main = document.getElementById("mainScreen");
-  const loading = document.getElementById("loadingScreen");
-  const login = document.getElementById("loginScreen");
-  const status = document.getElementById("status");
+  const expectedChannel = "realgeardriven";
 
-  if (stored) {
-    document.getElementById("shortLink").value = stored;
-    status.textContent = "✅ Already submitted today!";
-  } else {
-    notifyLoop();
-  }
-
-  function handleLogin() {
-    const user = document.getElementById("username").value;
-    const pass = document.getElementById("password").value;
-
-    if (user === "MoneyGuy7" && pass === "1234") {
-      login.style.display = "none";
-      loading.style.display = "flex";
+  function login() {
+    const u = document.getElementById("username").value.trim();
+    const p = document.getElementById("password").value.trim();
+    if (u === "MoneyGuy7" && p === "1234") {
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("loading").classList.remove("hidden");
       setTimeout(() => {
-        loading.style.display = "none";
-        main.style.display = "flex";
-      }, 2000); // loading time
+        document.getElementById("loading").classList.add("hidden");
+        document.getElementById("mainBox").classList.remove("hidden");
+      }, 2000);
     } else {
-      alert("❌ Incorrect credentials.");
+      alert("❌ Incorrect login.");
     }
   }
 
-  function submitShort() {
-    const link = document.getElementById("shortLink").value.trim();
-    if (!link.includes("youtube.com/shorts/")) {
-      alert("❌ Must be a valid YouTube Shorts link.");
+  function checkShort() {
+    const input = document.getElementById("shortLink").value.trim();
+    const match = input.match(/(?:\/shorts\/|v=)([\w\-]+)/);
+    const status = document.getElementById("status");
+
+    if (!match) {
+      status.innerText = "❌ Invalid YouTube Shorts link.";
       return;
     }
 
-    const videoId = link.split("/shorts/")[1].split("?")[0];
-    const fullLink = "https://www.youtube.com/watch?v=" + videoId;
+    const videoId = match[1];
+    const apiUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`;
 
-    fetch("https://noembed.com/embed?url=" + encodeURIComponent(fullLink))
-      .then(r => {
-        if (!r.ok) throw new Error("Noembed error");
-        return r.json();
-      })
+    fetch(apiUrl)
+      .then(res => res.json())
       .then(data => {
-        if (data.author_name !== expectedChannel) {
-          alert("❌ That short is not from your channel (" + expectedChannel + ").");
+        if (data.error) {
+          status.innerText = "❌ Could not verify the video.";
           return;
         }
-        localStorage.setItem("posted_" + today, link);
-        status.textContent = "✅ Short from correct channel submitted!";
+
+        const actualAuthor = data.author_name.replace(/[@\s]/g, '').toLowerCase();
+        const expected = expectedChannel.replace(/[@\s]/g, '').toLowerCase();
+
+        if (actualAuthor.includes(expected)) {
+          const today = new Date().toLocaleDateString();
+          localStorage.setItem("lastPostDate", today);
+          status.innerHTML = "✅ Video accepted! You’re done for today.";
+        } else {
+          status.innerHTML = `❌ That video is not from <strong>@${expectedChannel}</strong>`;
+        }
       })
-      .catch(err => {
-        alert("⚠️ Could not validate video.");
-        console.error(err);
+      .catch(() => {
+        status.innerText = "❌ Error checking video.";
       });
   }
 
-  function notifyLoop() {
-    if (!("Notification" in window)) return;
-
-    Notification.requestPermission().then(permission => {
-      if (permission !== "granted") return;
-
-      setInterval(() => {
-        const posted = localStorage.getItem("posted_" + today);
-        if (!posted) {
-          new Notification("📢 Reminder", {
-            body: "Don't forget to post a Short today!",
-            icon: "https://www.youtube.com/s/desktop/d8bdb05d/img/favicon_144x144.png"
-          });
-        }
-      }, 30000); // Every 30 seconds
-    });
-  }
+  // Optional daily reminder logic
+  window.onload = () => {
+    const last = localStorage.getItem("lastPostDate");
+    const today = new Date().toLocaleDateString();
+    if (last === today) {
+      document.getElementById("status").innerText = "✅ You’ve already posted today!";
+    }
+  };
 </script>
 
 </body>
