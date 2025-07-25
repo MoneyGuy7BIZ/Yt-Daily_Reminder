@@ -1,168 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YouTube Shorts Reminder</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #1b1b1b;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    #login, #mainApp {
-      display: none;
-      flex-direction: column;
-      gap: 1rem;
-      padding: 2rem;
-      background: #292929;
-      border-radius: 12px;
-      box-shadow: 0 0 20px #000000aa;
-    }
-    input, button {
-      padding: 0.8rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    input {
-      width: 250px;
-    }
-    button {
-      cursor: pointer;
-      background: #4CAF50;
-      color: white;
-    }
-    #status {
-      font-weight: bold;
-    }
-    #loadingScreen {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 3rem;
-      z-index: 9999;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GearDriven Shorts Reminder</title>
+<style>
+  body {
+    margin: 0; 
+    background-color: #0f0f0f; 
+    color: white; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh;
+    flex-direction: column;
+    padding: 20px;
+  }
+  #loading-screen {
+    position: fixed; 
+    top:0; left:0; width:100%; height:100%; 
+    background: rgba(0,0,0,0.9);
+    display: flex; 
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+    z-index: 9999;
+  }
+  .spinner {
+    border: 6px solid #181818;
+    border-top: 6px solid #00ff88;
+    border-radius: 50%;
+    width: 80px; 
+    height: 80px;
+    animation: spin 1s linear infinite;
+    position: relative;
+  }
+  .spinner::before {
+    content: "🚗";
+    position: absolute;
+    font-size: 30px;
+    top: 50%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
+  #login, #main-app {
+    background-color: #181818;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0, 255, 100, 0.2);
+    width: 320px;
+    max-width: 90vw;
+    text-align: center;
+  }
+  input[type=text], input[type=password] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0 15px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  button {
+    background-color: #00ff88;
+    border: none;
+    color: black;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+  }
+  button:hover {
+    background-color: #00cc6a;
+  }
+  #login-error, #validation-message, #success-info {
+    margin-top: 12px;
+    font-weight: 600;
+  }
+  #login-error {
+    color: #ff4d4d;
+  }
+  #validation-message {
+    color: #ffcc00;
+  }
+  #success-info {
+    color: #00ff88;
+    margin-top: 20px;
+    text-align: left;
+  }
+  #success-info p {
+    margin: 6px 0;
+    word-wrap: break-word;
+  }
+</style>
 </head>
 <body>
-  <div id="loadingScreen">🔄 🚗</div>
 
-  <div id="login">
-    <h2>Login</h2>
-    <input id="username" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
-    <button onclick="validateLogin()">Enter</button>
-    <div id="loginMsg"></div>
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <p style="color:#00ff88; margin-top:15px;">Loading...</p>
+</div>
+
+<div id="login">
+  <h2>Login</h2>
+  <input type="text" id="username" placeholder="Username" autocomplete="off" />
+  <input type="password" id="password" placeholder="Password" autocomplete="off" />
+  <button onclick="verifyLogin()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="main-app" style="display:none;">
+  <h2>Submit Your YouTube Shorts Link</h2>
+  <input type="text" id="shortLink" placeholder="Paste YouTube Shorts URL here" />
+  <button onclick="validateShort()">Submit</button>
+  <div id="validation-message"></div>
+  <div id="success-info" style="display:none;">
+    <h3>🎉 Video Accepted!</h3>
+    <p><strong>Title:</strong> <span id="video-title"></span></p>
+    <p><strong>Channel:</strong> <span id="video-channel"></span></p>
+    <p><strong>Upload Date:</strong> <span id="video-date"></span></p>
   </div>
+</div>
 
-  <div id="mainApp">
-    <h2>YouTube Shorts Reminder</h2>
-    <input id="shortLink" placeholder="Paste your YouTube Shorts link here" />
-    <button onclick="checkShort()">Submit</button>
-    <div id="status"></div>
-  </div>
+<script>
+  // Hide loading screen after 2 seconds then show login
+  window.onload = () => {
+    setTimeout(() => {
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('login').style.display = 'block';
+    }, 2000);
+  };
 
-  <script>
-    const expectedChannels = ["realgeardriven", "geardriven"];
+  function verifyLogin() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    const errorEl = document.getElementById('login-error');
+    errorEl.textContent = '';
 
-    function show(elementId) {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("mainApp").style.display = "none";
-      document.getElementById(elementId).style.display = "flex";
+    if(user === "MoneyGuy7" && pass === "1234") {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+    } else {
+      errorEl.textContent = '❌ Incorrect username or password.';
     }
+  }
 
-    function validateLogin() {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
-      const loginMsg = document.getElementById("loginMsg");
+  async function validateShort() {
+    const input = document.getElementById('shortLink').value.trim();
+    const validationMsg = document.getElementById('validation-message');
+    const successInfo = document.getElementById('success-info');
+    const titleEl = document.getElementById('video-title');
+    const channelEl = document.getElementById('video-channel');
+    const dateEl = document.getElementById('video-date');
 
-      if (user === "MoneyGuy7" && pass === "1234") {
-        show("mainApp");
+    validationMsg.textContent = '';
+    successInfo.style.display = 'none';
+
+    // Regex to get video ID from shorts or regular video link
+    const match = input.match(/(?:youtube\.com\/shorts\/|youtu\.be\/|youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/);
+    if(!match) {
+      validationMsg.textContent = "❌ Invalid YouTube Shorts URL.";
+      return;
+    }
+    const videoId = match[1];
+
+    validationMsg.textContent = "⏳ Validating video...";
+    
+    try {
+      // Use YouTube oEmbed endpoint to get video info (no API key needed)
+      const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if(!res.ok) throw new Error("Video validation failed");
+      const data = await res.json();
+
+      // Check author for accepted channels
+      const author = data.author_name.toLowerCase();
+      if(author.includes("realgeardriven") || author.includes("geardriven")) {
+        validationMsg.textContent = "";
+        successInfo.style.display = "block";
+
+        // We don't get upload date here so we just show "N/A"
+        titleEl.textContent = data.title;
+        channelEl.textContent = data.author_name;
+        dateEl.textContent = "N/A (upload date not available)";
+
+        // Save to localStorage (optional)
+        localStorage.setItem('lastPostDate', new Date().toLocaleDateString());
       } else {
-        loginMsg.innerText = "❌ Invalid username or password.";
+        validationMsg.textContent = `❌ This video is not from @RealGearDriven or GearDriven.`;
       }
+    } catch(e) {
+      validationMsg.textContent = "❌ Could not validate the video.";
     }
+  }
+</script>
 
-    function showLoading(show) {
-      document.getElementById("loadingScreen").style.display = show ? "flex" : "none";
-    }
-
-    async function checkShort() {
-      const input = document.getElementById("shortLink").value.trim();
-      const match = input.match(/(?:\/shorts\/|v=)([\w\-]+)/);
-      const status = document.getElementById("status");
-
-      if (!match) {
-        status.innerText = "❌ Invalid YouTube Shorts link.";
-        return;
-      }
-
-      const videoId = match[1];
-      showLoading(true);
-
-      try {
-        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-        const data = await response.json();
-
-        if (data.error) {
-          status.innerText = "❌ Could not verify the video.";
-          return;
-        }
-
-        const author = data.author_name.replace(/[@\s]/g, '').toLowerCase();
-        const isValid = expectedChannels.some(c => author.includes(c));
-
-        if (isValid) {
-          const today = new Date().toLocaleDateString();
-          localStorage.setItem("lastPosted", today);
-          status.innerText = "✅ Video accepted! You're good today.";
-        } else {
-          status.innerText = `❌ This video is not from @RealGearDriven or GearDriven.`;
-        }
-      } catch (err) {
-        status.innerText = "❌ Error checking video.";
-      } finally {
-        showLoading(false);
-      }
-    }
-
-    // Show login after fake loading
-    window.onload = () => {
-      setTimeout(() => {
-        showLoading(false);
-        show("login");
-        requestNotificationPermission();
-        checkReminder();
-      }, 1500);
-    };
-
-    function requestNotificationPermission() {
-      if (Notification && Notification.permission !== "granted") {
-        Notification.requestPermission();
-      }
-    }
-
-    function checkReminder() {
-      const last = localStorage.getItem("lastPosted");
-      const today = new Date().toLocaleDateString();
-
-      if (last !== today) {
-        setTimeout(() => {
-          if (Notification.permission === "granted") {
-            new Notification("📢 Reminder: You haven't posted a Short today!");
-          }
-        }, 3000); // Show reminder after 3 seconds
-      }
-    }
-  </script>
 </body>
 </html>
