@@ -1,49 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GearDriven Shorts Debug</title>
+  <meta charset="UTF-8">
+  <title>GearDriven Shorts Reminder</title>
   <style>
-    body { margin:0; background:#0f0f0f; color:#fff; font-family:sans-serif;
-      display:flex; justify-content:center; align-items:center; height:100vh; }
-    #container { background:#181818; padding:30px; border-radius:10px; width:320px; text-align:center; }
-    input, button { width:100%; padding:10px; margin:8px 0; border:none; border-radius:6px; font-size:16px; }
-    button { background:#00ff88; color:black; cursor:pointer; }
-    #msg { margin-top:15px; color:#ffcc00; font-weight:bold; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0d0d0d;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .hidden { display: none; }
+
+    .login-box, .main-app, .loader, .result-box {
+      border: 2px solid #0f0;
+      padding: 30px;
+      border-radius: 12px;
+      background: #1a1a1a;
+      box-shadow: 0 0 20px #0f0;
+    }
+
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+    }
+
+    input {
+      width: 100%;
+    }
+
+    button {
+      background-color: #0f0;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid #0f0;
+      border-top: 6px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      position: relative;
+    }
+
+    .spinner span {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      font-size: 24px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .result-box h2 {
+      margin-bottom: 10px;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <div id="container">
-    <h2>Submit & Debug</h2>
-    <input type="text" id="shortLink" placeholder="Enter Shorts link" />
-    <button onclick="validateShort()">Submit</button>
-    <div id="msg"></div>
+
+<div class="login-box" id="loginBox">
+  <h2>Login to GearDriven Reminder</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="validateLogin()">Login</button>
+</div>
+
+<div class="loader hidden" id="loader">
+  <div class="spinner">
+    <span>🚗</span>
   </div>
+  <p>Validating...</p>
+</div>
 
-  <script>
-    async function validateShort() {
-      const input = document.getElementById("shortLink").value.trim();
-      const msg = document.getElementById("msg");
-      msg.textContent = "";
+<div class="main-app hidden" id="mainApp">
+  <h2>Submit YouTube Shorts Link</h2>
+  <input type="text" id="videoURL" placeholder="Paste full YouTube Shorts link">
+  <button onclick="checkVideo()">Submit</button>
+  <p id="errorMsg" class="error"></p>
+</div>
 
-      const m = input.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=))([\w\-]{11})/);
-      if (!m) { msg.textContent = "❌ Invalid Shorts URL."; return; }
-      const id = m[1];
+<div class="result-box hidden" id="resultBox">
+  <h2>✅ Video Accepted</h2>
+  <p><strong>Title:</strong> <span id="videoTitle"></span></p>
+  <p><strong>Channel:</strong> <span id="videoChannel"></span></p>
+  <p><strong>Uploaded:</strong> <span id="videoDate"></span></p>
+</div>
 
-      msg.textContent = "⏳ Fetching video info...";
-      try {
-        const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
-        if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
-        console.log("Author returned:", data.author_name);
-
-        msg.innerHTML = `✅ Author returned:<br><code>${data.author_name}</code>`;
-      } catch (e) {
-        msg.textContent = "❌ Could not fetch video info.";
-        console.error(e);
-      }
+<script>
+  function validateLogin() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    if (user === 'MoneyGuy7' && pass === '1234') {
+      document.getElementById('loginBox').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+    } else {
+      alert("Incorrect login.");
     }
-  </script>
+  }
+
+  async function checkVideo() {
+    const url = document.getElementById("videoURL").value;
+    const errorMsg = document.getElementById("errorMsg");
+    const loader = document.getElementById("loader");
+    const mainApp = document.getElementById("mainApp");
+
+    errorMsg.textContent = "";
+    if (!url.includes("youtube.com/shorts/")) {
+      errorMsg.textContent = "Invalid Shorts link.";
+      return;
+    }
+
+    loader.classList.remove("hidden");
+    mainApp.classList.add("hidden");
+
+    try {
+      const videoId = url.split("/shorts/")[1].split("?")[0];
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+      const data = await res.json();
+
+      if (!data.title || !data.author_name) {
+        throw new Error("Could not validate video.");
+      }
+
+      const acceptedChannel = "GearDriven";
+      if (data.author_name !== acceptedChannel) {
+        throw new Error("❌ Video not from the correct channel.");
+      }
+
+      document.getElementById("videoTitle").textContent = data.title;
+      document.getElementById("videoChannel").textContent = data.author_name;
+      document.getElementById("videoDate").textContent = new Date(data.upload_date || Date.now()).toLocaleDateString();
+
+      loader.classList.add("hidden");
+      document.getElementById("resultBox").classList.remove("hidden");
+
+    } catch (err) {
+      loader.classList.add("hidden");
+      mainApp.classList.remove("hidden");
+      errorMsg.textContent = err.message || "Could not validate video.";
+    }
+  }
+</script>
+
 </body>
 </html>
