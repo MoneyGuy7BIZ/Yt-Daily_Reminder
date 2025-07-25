@@ -3,185 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GearDriven Shorts Reminder</title>
+  <title>GearDriven Shorts Debug</title>
   <style>
-    body {
-      margin: 0;
-      background-color: #0f0f0f;
-      font-family: Arial, sans-serif;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    #loading-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .spinner {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      position: relative;
-    }
-    .spinner::before {
-      content: "🚗";
-      font-size: 40px;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    #login, #main-app {
-      display: none;
-      background: #181818;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px #00ff88;
-      width: 320px;
-      text-align: center;
-    }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background-color: #00ff88;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #00cc66;
-    }
-    #login-error, #validation-msg {
-      margin-top: 10px;
-      color: #ff4d4d;
-      font-weight: bold;
-    }
-    #success-info {
-      margin-top: 20px;
-      text-align: left;
-      color: #00ff88;
-      display: none;
-    }
-    #success-info p {
-      margin: 6px 0;
-    }
+    body { margin:0; background:#0f0f0f; color:#fff; font-family:sans-serif;
+      display:flex; justify-content:center; align-items:center; height:100vh; }
+    #container { background:#181818; padding:30px; border-radius:10px; width:320px; text-align:center; }
+    input, button { width:100%; padding:10px; margin:8px 0; border:none; border-radius:6px; font-size:16px; }
+    button { background:#00ff88; color:black; cursor:pointer; }
+    #msg { margin-top:15px; color:#ffcc00; font-weight:bold; }
   </style>
 </head>
 <body>
-
-  <div id="loading-screen">
-    <div class="spinner"></div>
-    <p style="color: #00ff88; margin-top: 15px;">Loading...</p>
-  </div>
-
-  <div id="login">
-    <h2>Login</h2>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="verifyLogin()">Login</button>
-    <div id="login-error"></div>
-  </div>
-
-  <div id="main-app">
-    <h2>Submit Your Shorts Link</h2>
-    <input type="text" id="shortLink" placeholder="Paste YouTube Shorts URL" />
+  <div id="container">
+    <h2>Submit & Debug</h2>
+    <input type="text" id="shortLink" placeholder="Enter Shorts link" />
     <button onclick="validateShort()">Submit</button>
-    <div id="validation-msg"></div>
-
-    <div id="success-info">
-      <h3>🎉 Video Accepted!</h3>
-      <p><strong>📍 Title:</strong> <span id="video-title"></span></p>
-      <p><strong>📺 Channel:</strong> <span id="video-channel"></span></p>
-      <p><strong>📅 Upload:</strong> <span id="video-date"></span></p>
-    </div>
+    <div id="msg"></div>
   </div>
 
   <script>
-    // Show loading screen briefly
-    window.onload = () => {
-      setTimeout(() => {
-        document.getElementById("loading-screen").style.display = "none";
-        document.getElementById("login").style.display = "block";
-      }, 1200);
-    };
-
-    // Login logic
-    function verifyLogin() {
-      const user = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
-      const error = document.getElementById("login-error");
-
-      if (user === "MoneyGuy7" && pass === "1234") {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("main-app").style.display = "block";
-      } else {
-        error.textContent = "❌ Invalid username or password.";
-      }
-    }
-
-    // Validate YouTube Shorts link
     async function validateShort() {
       const input = document.getElementById("shortLink").value.trim();
-      const msg = document.getElementById("validation-msg");
-      const info = document.getElementById("success-info");
-      const titleSpan = document.getElementById("video-title");
-      const channelSpan = document.getElementById("video-channel");
-      const dateSpan = document.getElementById("video-date");
-
+      const msg = document.getElementById("msg");
       msg.textContent = "";
-      info.style.display = "none";
 
-      const videoIdMatch = input.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=))([\w\-]{11})/);
-      if (!videoIdMatch) {
-        msg.textContent = "❌ Invalid YouTube Shorts link.";
-        return;
-      }
+      const m = input.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|watch\?v=))([\w\-]{11})/);
+      if (!m) { msg.textContent = "❌ Invalid Shorts URL."; return; }
+      const id = m[1];
 
-      const videoId = videoIdMatch[1];
-      msg.textContent = "⏳ Validating video...";
-
+      msg.textContent = "⏳ Fetching video info...";
       try {
-        const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-        if (!res.ok) throw new Error("Not found");
-
+        const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+        if (!res.ok) throw new Error(res.status);
         const data = await res.json();
-        const author = data.author_name.replace(/[@\s]/g, "").toLowerCase();
-        const allowedChannels = ["realgeardriven", "geardriven"];
+        console.log("Author returned:", data.author_name);
 
-        const isMatch = allowedChannels.some(name => author.includes(name));
-        if (!isMatch) {
-          msg.textContent = `❌ Video is not from @RealGearDriven or GearDriven.`;
-          return;
-        }
-
-        msg.textContent = "";
-        titleSpan.textContent = data.title;
-        channelSpan.textContent = data.author_name;
-        dateSpan.textContent = new Date().toLocaleDateString();
-        info.style.display = "block";
-
-      } catch (err) {
-        msg.textContent = "❌ Video validation failed.";
+        msg.innerHTML = `✅ Author returned:<br><code>${data.author_name}</code>`;
+      } catch (e) {
+        msg.textContent = "❌ Could not fetch video info.";
+        console.error(e);
       }
     }
   </script>
-
 </body>
 </html>
